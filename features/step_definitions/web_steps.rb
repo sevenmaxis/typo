@@ -55,6 +55,75 @@ And /^I am logged into the admin panel$/ do
   end
 end
 
+Given /^I as (.*) have published article "([^"]*)" with content "([^"]*)"$/ do |author, title, content|
+  user_id = User.find_by_name(author).id
+  Article.create!(:title => title, :body => content, :allow_comments => true, :author => author, :user_id => user_id)
+end
+
+Given /^Article "([^"]*)" has comment "([^"]*)"$/ do |title, comment|
+  article = Article.find_by_title(title)
+  article.comments.build(:title => comment, :body => comment, :author => 'admin', :user_id => 1, :type => "Comment")
+  article.save!
+end
+
+And /^Article "([^"]*)" should have comment "([^"]*)"$/ do |title, comment|
+  Article.find_by_title(title).comments.find_by_title(comment).should_not == nil
+end
+
+# Then /^Article "(.*?)" should have comment "(.*?)"$/ do |title, comment|
+#   Article.find_by_title(title).comments.find_by_title(comment).should_not == nil
+# end
+
+And /^I follow the Edit link for article "([^"]*)"$/ do |title|
+  id = Article.find_by_title(title).id
+  visit "/admin/content/edit/#{id}"
+end
+
+And /^I follow the New Article link$/ do
+  visit "/admin/content/new"
+end
+
+And /^I fill in "([^"]*)" with the ID of article "([^"]*)"$/ do |field, title|
+  fill_in(field, :with => Article.find_by_title(title).id)
+end
+
+Then /^I should not see the "([^"]*)" button$/ do |label|
+  text = %Q{value="#{label}"}
+  if page.respond_to? :should
+    page.should have_no_content(text)
+  else
+    assert page.has_no_content?(text)
+  end
+end
+
+Then /^I should see the "([^"]*)" button$/ do |label|
+  find_button(label).should_not == nil
+end
+
+Then /^I should not see the "([^"]*)" textfield$/ do |label|
+  text = %Q{name="#{label}"}
+  if page.respond_to? :should
+    page.should have_no_content(text)
+  else
+    assert page.has_no_content?(text)
+  end
+end
+
+Then /^I should see the "([^"]*)" textfield$/ do |label|
+  find_field(label).should_not == nil
+end
+
+Then /I should see "(.*)" before "(.*)"/ do |text1, text2|
+  content = page.body.inspect
+  index = [[content.index(text1),text1],[content.index(text2),text2]].sort
+  [index[0][1],index[1][1]].should == [text1,text2]
+end
+
+And /^I follow the Edit link for category "([^"]*)"$/ do |name|
+  visit "/admin/categories/edit/#{Category.find_by_name(name).id}"
+end
+
+
 # Single-line step scoper
 When /^(.*) within (.*[^:])$/ do |step, parent|
   with_scope(parent) { When step }
